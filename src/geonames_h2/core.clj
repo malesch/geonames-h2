@@ -2,6 +2,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
             [clojure.java.jdbc :as jdbc]
+            [clojure.set :refer [difference]]
             [taoensso.timbre :as log]
             [geonames-h2.tables :as tables]
             [geonames-h2.util :as util])
@@ -107,13 +108,36 @@
         (catch Exception ex
           (log/error ex (.getMessage ex)))))))
 
+(defn filter-table-specs
+  "Filter the list of table specification maps by the sequence of
+  table keywords."
+  [table-specs & selected-tables]
+  (let [tset (into #{} selected-tables)]
+    (filter (fn [{:keys [table]}] (tset table)) table-specs)))
+
+(defn existing-tables []
+  (into #{} (map :table tables/table-specs)))
+
+(defn check-table-parameters [tables]
+  (let [existing (existing-tables)
+        non-existing (difference (into #{} tables) existing)]
+    (when-not (empty? non-existing)
+      (log/errorf "Non-existing tables specified: %s" (apply str (interpose ", " non-existing)))
+      (log/infof "Valid values: %s" (apply str (interpose ", " existing)))
+      (log/infof "Aborting")
+      (System/exit 1))))
+
 ;;
 ;;
 ;;
 
-(defn create-geonames-db []
-  (config-logging!)
-  (import-all db-spec tables/table-specs))
+(defn create-geonames-db
+  ([]
+    (apply create-geonames-db (existing-tables)))
+  ([& tables]
+   (check-table-parameters tables)
+   (config-logging!)
+   (import-all db-spec (apply filter tables/table-specs tables))))
 
 (defn start-console
   "Start the H2 database console with default parameters (http://localhost:8082)."

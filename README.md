@@ -23,6 +23,16 @@ The import can simply be started from the REPL with following steps:
 
 This will execute the download and import of all the files specified in the `table-specs` structure.
 
+Because processing of all configured data files takes quite some time (on my machine hours...), it is possible to selectively import specific tables
+of the existing configuration. For this `create-geonames-db` can be called by passing the table keywords of the corresponding configuration maps. <br/>
+Valid keywords are: `:geonames, :alternateNames, :hierarchy, :cities5000, :cities1000, :cities15000, :admin2Codes, :admin1CodesAscii`.
+
+Example for importing only the _cities1000_ and _admin2Codes_ data:
+
+```
+> (create-geonames-db :cities1000 :admin2Codes)
+```
+
 
 For checking the contents of the H2 DB, the integrated web console can be started directly from the REPL:
 
