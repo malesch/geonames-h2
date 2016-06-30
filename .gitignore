@@ -1,0 +1,11 @@
+/target
+*.jar
+*.class
+/.lein-*
+/.idea
+/*.iml
+/.nrepl-port
+/geonames.mv.db
+/geonames.lock.db
+/db/*
+/download/*
