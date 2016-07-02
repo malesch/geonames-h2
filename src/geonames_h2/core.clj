@@ -111,7 +111,7 @@
 (defn filter-table-specs
   "Filter the list of table specification maps by the sequence of
   table keywords."
-  [table-specs & selected-tables]
+  [table-specs selected-tables]
   (let [tset (into #{} selected-tables)]
     (filter (fn [{:keys [table]}] (tset table)) table-specs)))
 
@@ -137,7 +137,7 @@
   ([& tables]
    (config-logging!)
    (check-table-parameters tables)
-   (import-all db-spec (filter tables/table-specs tables))))
+   (import-all db-spec (filter-table-specs tables/table-specs tables))))
 
 (defn start-console
   "Start the H2 database console with default parameters (http://localhost:8082)."
