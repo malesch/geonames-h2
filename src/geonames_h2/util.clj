@@ -2,9 +2,8 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string])
   (:import [java.io File]
-           [java.nio.file Files]
            [java.net URL]
-           [java.util.zip ZipInputStream ZipEntry ZipFile]))
+           [java.util.zip ZipFile]))
 
 (defn is-zip?
   "Return true if the file-path is a zip file (has the `zip` extension)."

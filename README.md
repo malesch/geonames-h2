@@ -5,9 +5,10 @@ Build a H2 database with the GeoNames information.
 
 ## General
 
-The source data can be downloaded from the [GeoNames] (http://download.geonames.org/export/dump/) web site as zipped CSV files.
-The fetched data is automatically unzipped and the text files finally stored in the local `./download` directory.
-The H2 database is created in the project root directory.
+The source data can be downloaded from the [GeoNames] (http://www.geonames.org) web site from the
+[download] (http://download.geonames.org/export/dump/) area.
+During processing the fetched data is automatically unzipped, if existing in an archive, and the text
+files finally stored in the local directory `./download`. The H2 database is created in the project root directory.
 
 The data structure `geonames-h2.tables/table-specs` is a list of configuration maps, holding the information of the source data
 and the definition of the database table (with indexes) for storing the data.
