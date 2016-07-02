@@ -1,14 +1,16 @@
 geonames-h2
 ===========
 
-Build a H2 database with the GeoNames data.
+Build a H2 database with the GeoNames information.
 
 ## General
 
 The source data can be downloaded from the [GeoNames] (http://download.geonames.org/export/dump/) web site as zipped CSV files.
-The fetched data is unzipped and the text files stored in the `./download` directory. The H2 database is created under the local directory `./db`.
-The data structure `geonames-h2.tables/table-specs` is a map with the processed data files and the information for creating the database table
-for storing the data. Table indexes are also created for more efficient querying.
+The fetched data is automatically unzipped and the text files finally stored in the local `./download` directory.
+The H2 database is created in the project root directory.
+
+The data structure `geonames-h2.tables/table-specs` is a list of configuration maps, holding the information of the source data
+and the definition of the database table (with indexes) for storing the data.
 
 
 ## Usage
@@ -17,33 +19,42 @@ The import can simply be started from the REPL with following steps:
 
 ```
 > lein repl
-> in-ns 'geonames-h2.core
-> (create-geonames-db)
+user=> (use 'geonames-h2.core)
+user=> (in-ns 'geonames-h2.core)
+geonames-h2.core=> (create-geonames-db)
 ```
 
 This will execute the download and import of all the files specified in the `table-specs` structure.
 
-Because processing of all configured data files takes quite some time (on my machine hours...), it is possible to selectively import specific tables
-of the existing configuration. For this `create-geonames-db` can be called by passing the table keywords of the corresponding configuration maps. <br/>
-Valid keywords are: `:geonames, :alternateNames, :hierarchy, :cities5000, :cities1000, :cities15000, :admin2Codes, :admin1CodesAscii`.
-
-Example for importing only the _cities1000_ and _admin2Codes_ data:
-
+It is possible to selectively import specific tables from the existing configuration. For this the `create-geonames-db` function can be called with the desired table keywords. <br/>
+Valid keywords are currently: <br/>
 ```
-> (create-geonames-db :cities1000 :admin2Codes)
+:geonames, :alternateNames, :hierarchy, :cities5000, :cities1000, :cities15000, :admin2Codes, :admin1CodesAscii
 ```
 
+Example for importing only the _cities1000_ and _admin2Codes_ data sets:
+
+```
+geonames-h2.core=> (create-geonames-db :cities1000 :admin2Codes)
+```
+
+__Remark__: The import into the H2 database takes quite long (about 2 hours on my machine) and the size of final database with all tables is about 15 GB!
+
+## Web Console
 
 For checking the contents of the H2 DB, the integrated web console can be started directly from the REPL:
 
 Starting:
 
 ```
-> (start-console)
+geonames-h2.core=> (start-console)
 ```
+
+After starting the console, the web browser should automatically open and access the H2 web console page under `http://localhost:8082`.
+The generated database is accessible by using the JDBC URL `jdbc:h2:./geonames`.
 
 Stopping:
 
 ```
-> (stop-console)
+geonames-h2.core=> (stop-console)
 ```

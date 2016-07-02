@@ -2,7 +2,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
             [clojure.java.jdbc :as jdbc]
-            [clojure.set :refer [difference]]
+            [clojure.set :as set]
             [taoensso.timbre :as log]
             [geonames-h2.tables :as tables]
             [geonames-h2.util :as util])
@@ -13,7 +13,7 @@
 
 (def db-spec {:classname   "org.h2.Driver"
               :subprotocol "h2"
-              :subname     "./geonames;AUTO_SERVER=TRUE"
+              :subname     "./geonames"
               :user        "sa"
               :password    ""})
 
@@ -120,7 +120,7 @@
 
 (defn check-table-parameters [tables]
   (let [existing (existing-tables)
-        non-existing (difference (into #{} tables) existing)]
+        non-existing (set/difference (into #{} tables) existing)]
     (when-not (empty? non-existing)
       (log/errorf "Non-existing tables specified: %s" (apply str (interpose ", " non-existing)))
       (log/infof "Valid values: %s" (apply str (interpose ", " existing)))
@@ -135,16 +135,17 @@
   ([]
     (apply create-geonames-db (existing-tables)))
   ([& tables]
-   (check-table-parameters tables)
    (config-logging!)
-   (import-all db-spec (apply filter tables/table-specs tables))))
+   (check-table-parameters tables)
+   (import-all db-spec (filter tables/table-specs tables))))
 
 (defn start-console
   "Start the H2 database console with default parameters (http://localhost:8082)."
   []
   (when-not @h2-console
-    (reset! h2-console (.start (Server/createWebServer (into-array String ["-baseDir" (:subname db-spec)]))))
-    (Server/openBrowser "http://localhost:8082")))
+    (reset! h2-console (.start (Server/createWebServer (into-array String ["-baseDir" (System/getProperty "user.dir")]))))
+    (Server/openBrowser "http://localhost:8082")
+    (log/infof "Enter in the `JDBC URL` field: jdbc:h2:%s" (:subname db-spec))))
 
 (defn stop-console
   "Stop running H2 console"
