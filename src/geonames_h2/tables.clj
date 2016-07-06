@@ -38,7 +38,8 @@
                              [:isShortName :boolean]
                              [:isColloquial :boolean]
                              [:isHistoric :boolean]]
-                   :indexes [[:idx_altnames_altname [:alternateName]]]}
+                   :indexes [[:idx_altnames_altname [:alternateName]]
+                             [:idx_altnames_geonameid [:geonameid]]]}
                   {:url     (str base-url "hierarchy.zip")
                    :file    "hierarchy.txt"
                    :table   :hierarchy
@@ -52,7 +53,8 @@
                              [:name "varchar(80)"]
                              [:nameAscii "varchar(80)"]
                              [:geonameid :int]]
-                   :indexes [[:idx_admin1_name [:name]]]}
+                   :indexes [[:idx_admin1_name [:name]]
+                             [:idx_admi1_geonameid [:geonameid]]]}
                   {:url     (str base-url "admin2Codes.txt")
                    :file    "admin2Codes.txt"
                    :table   :admin2Codes
@@ -60,7 +62,8 @@
                              [:name_local "varchar(80)"]
                              [:name "varchar(80)"]
                              [:geonameid :int]]
-                   :indexes [[:idx_admin2_name [:name]]]}
+                   :indexes [[:idx_admin2_name [:name]]
+                             [:idx_admin2_geonameid [:geonameid]]]}
                   {:url     (str base-url "cities1000.zip")
                    :file    "cities1000.txt"
                    :table   :cities1000
