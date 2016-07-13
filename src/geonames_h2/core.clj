@@ -22,6 +22,14 @@
 (defn config-logging! []
   (log/merge-config! {:level :info}))
 
+(defn register-uncaught-exception-handler!
+  "Register a handler for the uncaught exceptions, thrown e.g. in background threads (pmap)."
+  []
+  (Thread/setDefaultUncaughtExceptionHandler
+    (reify Thread$UncaughtExceptionHandler
+      (uncaughtException [_ thread ex]
+        (log/errorf ex "Uncaught exception on %s" (.getName thread))))))
+
 (defn create-table [db-spec {:keys [table columns]}]
   (log/infof "Create table `%s`" (name table))
   (try
@@ -138,6 +146,7 @@
     (apply create-geonames-db (existing-tables)))
   ([& tables]
    (config-logging!)
+   (register-uncaught-exception-handler!)
    (check-table-parameters tables)
    (import-all db-spec (filter-table-specs tables/table-specs tables))))
 
