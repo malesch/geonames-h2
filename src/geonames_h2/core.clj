@@ -72,13 +72,15 @@
   (if (.exists import-file)
     (with-open [rdr (io/reader import-file)]
       (jdbc/with-db-connection [con db-spec]
-                               (doseq [row (line-seq rdr)]
-                                 (let [data (zipmap (map first columns)
-                                                    (csv-row-values row))]
-                                   (try
-                                     (jdbc/insert! con table data)
-                                     (catch Exception ex
-                                       (log/errorf "JDBC insert failed: " ex))))))
+                               (doall
+                                 (pmap (fn [row]
+                                         (let [data (zipmap (map first columns)
+                                                            (csv-row-values row))]
+                                           (try
+                                             (jdbc/insert! con table data)
+                                             (catch Exception ex
+                                               (log/errorf "JDBC insert failed: " ex)))))
+                                       (line-seq rdr))))
       :OK)
     (throw (ex-info "Import data file not found" {:table table :message (str "Missing import file: " import-file)}))))
 
