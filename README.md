@@ -39,7 +39,9 @@ Example for importing only the _cities1000_ and _admin2Codes_ data sets:
 geonames-h2.core=> (create-geonames-db :cities1000 :admin2Codes)
 ```
 
-__Remark__: The import into the H2 database takes quite long (about 2 hours on my machine) and the size of final database with all tables is about 15 GB!
+__Note__:
+ * The database will automatically be created and should not exist when running the import.
+ * The import into the H2 database takes quite long (about 2 hours on my machine) and the size of final database with all tables is about 15 GB!
 
 ## Web Console
 
