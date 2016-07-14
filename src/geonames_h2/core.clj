@@ -2,6 +2,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
             [clojure.java.jdbc :as jdbc]
+            [hikari-cp.core :as hik]
             [clojure.set :as set]
             [taoensso.timbre :as log]
             [geonames-h2.tables :as tables]
@@ -11,11 +12,17 @@
            [org.h2.tools Server]
            [clojure.lang ExceptionInfo]))
 
-(def db-spec {:classname   "org.h2.Driver"
-              :subprotocol "h2"
-              :subname     "./geonames"
-              :user        "sa"
-              :password    ""})
+(def datasource-options {:adapter  "h2"
+                         :url      "jdbc:h2:./geonames"
+                         :username "sa"
+                         :password ""
+                         ;; more Hikari CP parameters
+                         ;; :maximal-pool-size 10
+                         ;; :auto-commit true
+                         ;; :connection-timeout 30000
+                         ;; :idle-timeout 1800000
+                         ;; ...
+                         })
 
 (def h2-console (atom nil))
 
@@ -30,19 +37,19 @@
       (uncaughtException [_ thread ex]
         (log/errorf ex "Uncaught exception on %s" (.getName thread))))))
 
-(defn create-table [db-spec {:keys [table columns]}]
+(defn create-table [datasource {:keys [table columns]}]
   (log/infof "Create table `%s`" (name table))
   (try
-    (jdbc/db-do-commands db-spec
+    (jdbc/db-do-commands {:datasource datasource}
                          (apply jdbc/create-table-ddl table columns))
     (catch Exception ex
       (throw (ex-info "SQL table cannot be created" {:reason (.getMessage ex)
                                                      :table  table})))))
 
-(defn create-table-indexes [db-spec {:keys [table indexes]}]
+(defn create-table-indexes [datasource {:keys [table indexes]}]
   (log/infof "Create indexes on table `%s`" (name table))
   (try
-    (jdbc/with-db-connection [conn db-spec]
+    (jdbc/with-db-connection [conn {:datasource datasource}]
                              (doseq [[idx-name idx-cols] indexes]
                                (when (seq indexes)
                                  (log/debugf "CREATE index %s ON %s (%s)"
@@ -52,7 +59,7 @@
                                                   (map name)
                                                   (interpose ",")
                                                   (apply str)))
-                                 (jdbc/execute! db-spec
+                                 (jdbc/execute! conn
                                                 [(format "CREATE index %s ON %s (%s)"
                                                          (name idx-name)
                                                          (name table)
@@ -75,17 +82,17 @@
   (when s
     (map clean-col-val (string/split s #"\t"))))
 
-(defn import-data [db-spec {:keys [table columns]} ^File import-file]
+(defn import-data [datasource {:keys [table columns]} ^File import-file]
   (log/infof "Import data from file `%s`" import-file)
   (if (.exists import-file)
     (with-open [rdr (io/reader import-file)]
-      (jdbc/with-db-connection [con db-spec]
+      (jdbc/with-db-connection [conn {:datasource datasource}]
                                (doall
                                  (pmap (fn [row]
                                          (let [data (zipmap (map first columns)
                                                             (csv-row-values row))]
                                            (try
-                                             (jdbc/insert! con table data)
+                                             (jdbc/insert! conn table data)
                                              (catch Exception ex
                                                (log/errorf "JDBC insert failed: " ex)))))
                                        (line-seq rdr))))
@@ -95,12 +102,12 @@
 
 (defn perform-table-import
   "Create database table and import the geonames."
-  [db-spec table-spec ^File import-file]
-  (create-table db-spec table-spec)
-  (create-table-indexes db-spec table-spec)
-  (import-data db-spec table-spec import-file))
+  [datasource table-spec ^File import-file]
+  (create-table datasource table-spec)
+  (create-table-indexes datasource table-spec)
+  (import-data datasource table-spec import-file))
 
-(defn import-all [db-spec table-specs]
+(defn import-all [datasource table-specs]
   (doseq [ts table-specs]
     (let [table-name (name (:table ts))
           file (:file ts)
@@ -109,7 +116,7 @@
         (log/infof "Download `%s` from `%s`" file url)
         (let [import-file (util/download-geonames-file url (util/make-local-directory "download") file)]
           (log/infof "Import `%s` into table `%s`" import-file table-name)
-          (perform-table-import db-spec ts import-file)
+          (perform-table-import datasource ts import-file)
           (log/infof "Completed import for table `%s`" table-name)
           :OK)
         (catch ExceptionInfo ex
@@ -145,10 +152,14 @@
   ([]
     (apply create-geonames-db (existing-tables)))
   ([& tables]
-   (config-logging!)
-   (register-uncaught-exception-handler!)
-   (check-table-parameters tables)
-   (import-all db-spec (filter-table-specs tables/table-specs tables))))
+   (let [datasource (hik/make-datasource datasource-options)]
+     (try
+       (config-logging!)
+       (register-uncaught-exception-handler!)
+       (check-table-parameters tables)
+       (import-all datasource (filter-table-specs tables/table-specs tables))
+       (finally
+         (hik/close-datasource datasource))))))
 
 (defn start-console
   "Start the H2 database console with default parameters (http://localhost:8082)."
@@ -156,7 +167,7 @@
   (when-not @h2-console
     (reset! h2-console (.start (Server/createWebServer (into-array String ["-baseDir" (System/getProperty "user.dir")]))))
     (Server/openBrowser "http://localhost:8082")
-    (log/infof "Enter in the `JDBC URL` field: jdbc:h2:%s" (:subname db-spec))))
+    (log/infof "Enter in the `JDBC URL` field: %s" (:url datasource-options))))
 
 (defn stop-console
   "Stop running H2 console"
