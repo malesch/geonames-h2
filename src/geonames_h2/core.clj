@@ -94,7 +94,7 @@
                                            (try
                                              (jdbc/insert! conn table data)
                                              (catch Exception ex
-                                               (log/errorf "JDBC insert failed: " ex)))))
+                                               (log/errorf ex "JDBC insert failed")))))
                                        (line-seq rdr))))
       :OK)
     (throw (ex-info "Import data file not found" {:table table :message (str "Missing import file: " import-file)}))))
