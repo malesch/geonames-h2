@@ -41,7 +41,7 @@
   (log/infof "Create table `%s`" (name table))
   (try
     (jdbc/db-do-commands {:datasource datasource}
-                         (apply jdbc/create-table-ddl table columns))
+                         (jdbc/create-table-ddl table columns))
     (catch Exception ex
       (throw (ex-info "SQL table cannot be created" {:reason (.getMessage ex)
                                                      :table  table})))))

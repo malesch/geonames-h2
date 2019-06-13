@@ -1,7 +1,6 @@
 (ns geonames-h2.util-test
   (:require [clojure.test :refer :all]
-            [geonames-h2.util :as u])
-  (:import [java.net URL]))
+            [geonames-h2.util :as u]))
 
 (defn falsey? [x]
   (or (nil? x) (false? x)))
