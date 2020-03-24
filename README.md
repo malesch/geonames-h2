@@ -65,7 +65,7 @@ geonames-h2.core=> (stop-console)
 
 
 
-##License
+## License
 
 Copyright © 2016 Marcus Spiegel
 
